@@ -51,10 +51,60 @@ def detect_encryption_mode(block_size):
     return 'CBC Mode'
 
 
+# determines the length of the secret string
+def detect_length(block_size):
+    initial_length = len(blackbox(b''))
+    prepend_length = 1
+    while True:
+        ciphertext_length = len(blackbox(bytes('a' * prepend_length, 'utf-8')))
+        if ciphertext_length > initial_length:
+            return (block_size - prepend_length) + (initial_length - 16)
+        prepend_length += 1
+
+
+def make_dictionary(dict_prefix):
+    dict = {}
+    keys = [bytes([x]) for x in range(256)]
+    for key in keys:
+        dict[key] = blackbox(dict_prefix + key)[0: 16]
+    return dict
+
+
+def extract(length):
+    result = b''
+    index = 0
+
+    while index < length:
+        if index <= 15:
+            dict_prefix = bytes('a' * (15 - index), 'utf-8') + result[0: index]
+            prepend_length = 15 - index
+            output_block = blackbox(bytes('a' * prepend_length, 'utf-8'))[0: 16]
+        else:
+            dict_prefix = result[index - 15: index]
+            prepend_length = 15 - index
+            while prepend_length < 0:
+                prepend_length += 16
+            output_block = blackbox(bytes('a' * prepend_length, 'utf-8')
+                                    )[index - 15 + prepend_length: index + 1 + prepend_length]
+
+        dict = make_dictionary(dict_prefix)
+        for key in dict:
+            if dict[key] == output_block:
+                result += key
+                break
+        index += 1
+
+    return result
+
+
 def oracle():
     block_size = detect_block_size()
     print("The block size is " + str(block_size))
     print("The encryption mode is " + detect_encryption_mode(block_size))
+    length = detect_length(block_size)
+    print("The length of the secret string is " + str(length))
+    secret_str = extract(length).decode('utf-8')
+    print(secret_str)
 
 
 if __name__ == "__main__":
