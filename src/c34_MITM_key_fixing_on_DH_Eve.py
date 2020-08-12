@@ -22,6 +22,17 @@ def recv_msg(sock):
         return None
 
 
+def relay_data(in_sock, out_sock):
+    # relays the received data and return the data
+    length = in_sock.recv(4)
+    data = in_sock.recv(int.from_bytes(length, byteorder='big'))
+    if data:
+        out_sock.send(length + data)
+        return data
+    else:
+        return None
+
+
 # sends msg encrypted with AES CBC mode with IV appended
 def send_encrypted_msg(sock, msg, key):
     cipher = AES.new(key, AES.MODE_CBC)
@@ -31,12 +42,8 @@ def send_encrypted_msg(sock, msg, key):
     sock.send(data)
 
 
-# receive the AES CBC encrypted data and decrypts it
-def recv_encrypted_msg(sock, key):
-    data_length = int.from_bytes(sock.recv(4), byteorder='big')
-    data = sock.recv(data_length)
-    if not data:
-        return None
+# decrypts the ciphertext with the provided AES key
+def decrypt_msg(data, key):
     iv = data[-AES.block_size:]
     data = data[:-AES.block_size]
     cipher = AES.new(key, AES.MODE_CBC, iv)
@@ -79,17 +86,17 @@ key = hash.digest()[0: 16]
 
 # relays encrypted messages between Alice and Bob, at the same time decrypting them
 while True:
-    from_Alice = recv_encrypted_msg(conn1, key)
-    while not from_Alice:
-        from_Alice = recv_encrypted_msg(conn1, key)
+    data = relay_data(conn1, sock2)
+    while not data:
+        data = relay_data(conn1, sock2)
+    from_Alice = decrypt_msg(data, key)
     print("Alice said: " + from_Alice)
-    send_encrypted_msg(sock2, from_Alice, key)
 
-    from_Bob = recv_encrypted_msg(sock2, key)
-    while not from_Bob:
-        from_Bob = recv_encrypted_msg(sock2, key)
+    data = relay_data(sock2, conn1)
+    while not data:
+        data = relay_data(sock2, conn1)
+    from_Bob = decrypt_msg(data, key)
     print("Bob said: " + from_Bob)
-    send_encrypted_msg(conn1, from_Bob, key)
 
 sock1.close()
 sock2.close()

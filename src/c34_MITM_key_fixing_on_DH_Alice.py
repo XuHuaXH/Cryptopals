@@ -47,7 +47,8 @@ def recv_encrypted_msg(sock, key):
 
 # Alice acts as the client
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(('0.0.0.0', 3333))  # connects to (supposed Bob but)Eve on port 3333
+# connects to (supposed Bob but)Eve on port 3333
+sock.connect(('0.0.0.0', 3333))
 
 # send DH public parameters
 p = int("ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca237327ffffffffffffffff", 16)
@@ -66,21 +67,21 @@ while not received:
 B = int(received)
 s = modexp(B, a, p)
 
-print("the shared secret is " + str(s))
+print("The shared secret is " + str(s))
 
 # Alice starts sending encrypted messages
 full_lyrics = "BA BA BA BABANANA\nBA BA BA BABANANA BANANA NA AHH, POTATO NA AH AH BANANA AH AH\nTO GA LI NO PO TAH TO NI GAH NI BAH LO BAH NI KAH NO JI GAH BA BA BA BABANANA\nYO PLANO HU LA PA NO NO TU MA BANANA LIKE A NUPI TALAMOO\nBANANA BA BA BABANANA BA BA BA BABANANA\nPOTATO HO HOOOOOO\nTO GA LI NO PO TAH TO NI GAH NI BAH LO BAH NI KAH NO JI\nGAH BA BA BA BABANANAAAAAAAAA".split(
     '\n')
 lyrics = [full_lyrics[i] for i in range(0, len(full_lyrics)) if i % 2 == 0]
 
-# derives AES key from the shared secret
+# derive an AES key from the shared secret
 hash = hashlib.sha256()
 hash.update(str(s).encode('utf-8'))
 key = hash.digest()[0: 16]
 
 
 for sentence in lyrics:
-    print("Sending: " + sentence)
+    print("Sent: " + sentence)
     send_encrypted_msg(sock, sentence, key)
     received = recv_encrypted_msg(sock, key)
     while not received:

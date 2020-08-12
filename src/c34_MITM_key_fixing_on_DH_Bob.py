@@ -65,12 +65,12 @@ B = modexp(g, b, p)
 
 # computes the shared secret
 s = modexp(A, b, p)
-print("the shared secret is " + str(s))
+print("The shared secret is " + str(s))
 
 # sends Alice the public key
 send_msg(conn, str(B))
 
-# derives AES key from the shared secret
+# derive an AES key from the shared secret
 hash = hashlib.sha256()
 hash.update(str(s).encode('utf-8'))
 key = hash.digest()[0: 16]
@@ -85,7 +85,7 @@ for sentence in lyrics:
     while not received:
         received = recv_encrypted_msg(conn, key)
     print("Received: " + received)
-    print("Sending: " + sentence)
+    print("Sent: " + sentence)
     send_encrypted_msg(conn, sentence, key)
 
 sock.close()
